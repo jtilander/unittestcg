@@ -1,0 +1,86 @@
+<?xml version="1.0"?> 
+<project name="UnitTestCgTestSuite" default="all">
+
+  <script language="C#" prefix="aurora">
+		<imports>
+			<import namespace="System.Diagnostics"/>;
+		</imports>
+		<code>
+			<![CDATA[
+				[TaskName("CustomExec")]
+				public class CustomExec : Task
+				{
+					private string m_command = "";
+					private string m_args = "";
+					private string m_expected = "true";
+					
+					[TaskAttribute("command", Required=true)]
+					public string CommandAttr
+					{
+						get { return m_command; }
+						set { m_command = value; }
+					}
+
+					[TaskAttribute("arguments", Required=false)]
+					public string ArgumentAttr
+					{
+						get { return m_args; }
+						set { m_args = value; }
+					}
+
+					[TaskAttribute("expected", Required=false)]
+					public string ExpectedAttr
+					{
+						get { return m_expected; }
+						set { m_expected = value; }
+					}
+
+					protected override void ExecuteTask()
+					{
+						Log(Level.Info, m_expected + " == " + m_command + " " + m_args);
+						
+						ProcessStartInfo info = new ProcessStartInfo(m_command, m_args);
+						info.UseShellExecute = false;
+						info.RedirectStandardInput = true;
+						info.RedirectStandardOutput = true;
+						info.RedirectStandardError = true;
+						info.CreateNoWindow = true;
+						
+						Process process = new Process();
+						process.StartInfo = info;
+						
+						try
+						{
+							if( !process.Start() )
+								throw new BuildException("Failed to start process: " + m_command, Location);
+						}
+						catch(System.ComponentModel.Win32Exception e)
+						{
+							throw new BuildException("Failed to find process: " + m_command, Location);
+						}
+						
+						process.WaitForExit();
+						
+						bool failed = false;
+						if( m_expected == "true" && 0 != process.ExitCode )
+							failed = true;
+						if( m_expected == "false" && 0 == process.ExitCode )
+							failed = false;
+						
+						
+						if( failed || Verbose )
+						{
+							Log( Level.Info, process.StandardOutput.ReadToEnd() );
+							Log( Level.Info, process.StandardError.ReadToEnd() );
+							
+							if( failed )
+							{
+								throw new BuildException("Command returned: " + process.ExitCode, Location);
+							}
+						}
+					}
+				}
+			]]>
+		</code>
+	</script>
+</project>
