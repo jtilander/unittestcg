@@ -11,3 +11,7 @@
 - Fix all the cleanup memory leaks! WTF!
 - Make sure that the window when it is closed does so in correct order.
 
+
+
+- Maybe update to Cg 2.0 and the new DX?
+
